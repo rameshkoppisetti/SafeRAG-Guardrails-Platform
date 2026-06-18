@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -55,3 +57,33 @@ def test_acl_filtering_blocks_wrong_role():
     )
     assert chat_resp.status_code == 200
     assert chat_resp.json()["citations"] == []
+
+
+def test_chat_stream_emits_answer_events():
+    client = TestClient(create_app())
+    client.post(
+        "/documents/ingest",
+        json={
+            "document_id": "refund-policy-v1",
+            "tenant_id": "tenant_123",
+            "acl": ["support"],
+            "text": "Refunds are processed within 7 business days.",
+        },
+    )
+
+    stream_resp = client.post(
+        "/chat/stream",
+        json={
+            "tenant_id": "tenant_123",
+            "user_id": "user_1",
+            "roles": ["support"],
+            "query": "How long do refunds take?",
+        },
+    )
+
+    assert stream_resp.status_code == 200
+    events = [json.loads(line) for line in stream_resp.text.splitlines()]
+    assert events[0]["type"] == "session"
+    assert any(event["type"] == "delta" for event in events)
+    assert any(event["type"] == "citations" and event["citations"] for event in events)
+    assert events[-1]["type"] == "done"

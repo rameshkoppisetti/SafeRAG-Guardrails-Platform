@@ -44,6 +44,8 @@ AWS Bedrock Guardrails ApplyGuardrail(OUTPUT)
 Answer + citations
 ```
 
+For a component-level HLD with request flows, see [docs/hld.md](docs/hld.md).
+
 ## Features
 
 - FastAPI backend
@@ -79,6 +81,14 @@ Open:
 
 ```text
 http://localhost:8000/docs
+```
+
+The default `.env` uses in-memory vector and session storage so the API can run without
+Postgres. To test persistent session memory locally, start Postgres first:
+
+```bash
+docker compose up -d pgvector
+SESSION_BACKEND=postgres uvicorn app.main:app --reload
 ```
 
 ## Run demo

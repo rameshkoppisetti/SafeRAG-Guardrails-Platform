@@ -24,8 +24,10 @@ class LangChainVectorRepository:
         try:
             results = self.vector_store.similarity_search_with_score(query=query, k=top_k, filter=filter_query)
         except Exception:
-            raw_results = self.vector_store.similarity_search_with_score(query=query, k=top_k * 3)
-            results = [(doc, score) for doc, score in raw_results if self._is_authorized(doc, tenant_id, roles)][:top_k]
+            results = self._search_and_authorize(query, tenant_id, roles, top_k)
+        else:
+            if not results:
+                results = self._search_and_authorize(query, tenant_id, roles, top_k)
         return [LangChainSearchResult(document=doc, score=float(score)) for doc, score in results]
 
     def count(self) -> int:
@@ -45,6 +47,16 @@ class LangChainVectorRepository:
         if not acl or "__public__" in acl:
             return True
         return bool(set(roles).intersection(set(acl)))
+
+    def _search_and_authorize(
+        self,
+        query: str,
+        tenant_id: str,
+        roles: Iterable[str],
+        top_k: int,
+    ):
+        raw_results = self.vector_store.similarity_search_with_score(query=query, k=top_k * 3)
+        return [(doc, score) for doc, score in raw_results if self._is_authorized(doc, tenant_id, roles)][:top_k]
 
 
 class LocalInMemoryVectorStore:

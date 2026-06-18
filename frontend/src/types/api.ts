@@ -10,6 +10,13 @@ export type ChatResponse = {
   citations: Citation[];
 };
 
+export type ChatStreamEvent =
+  | { type: 'session'; session_id: string }
+  | { type: 'delta'; text: string }
+  | { type: 'citations'; citations: Citation[] }
+  | { type: 'done' }
+  | { type: 'error'; detail: string };
+
 export type Session = {
   session_id: string;
   tenant_id: string;

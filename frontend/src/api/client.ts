@@ -1,4 +1,4 @@
-import type { ChatResponse, IngestResponse, Message, Session } from '../types/api';
+import type { ChatResponse, ChatStreamEvent, IngestResponse, Message, Session } from '../types/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -57,4 +57,51 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  chatStream: async (
+    payload: {
+      tenant_id: string;
+      user_id: string;
+      roles: string[];
+      session_id?: string;
+      query: string;
+    },
+    onEvent: (event: ChatStreamEvent) => void,
+  ) => {
+    const response = await fetch(`${API_BASE_URL}/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    if (!response.body) {
+      throw new Error('Streaming response body is unavailable');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        onEvent(JSON.parse(line) as ChatStreamEvent);
+      }
+    }
+
+    buffer += decoder.decode();
+    if (buffer.trim()) {
+      onEvent(JSON.parse(buffer) as ChatStreamEvent);
+    }
+  },
 };

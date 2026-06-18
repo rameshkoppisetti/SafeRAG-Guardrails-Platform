@@ -42,40 +42,71 @@ export function ChatPanel({ tenantId, userId, roles, sessionId, onSessionResolve
     if (!trimmed) return;
 
     setLoading(true);
-    setMessages((current) => [
+    const assistantCreatedAt = new Date().toISOString();
+    setMessages((current: UiMessage[]) => [
       ...current,
       { role: 'user', content: trimmed, created_at: new Date().toISOString() },
+      { role: 'assistant', content: '', citations: [], created_at: assistantCreatedAt },
     ]);
     setQuery('');
 
     try {
-      const response = await api.chat({
-        tenant_id: tenantId,
-        user_id: userId,
-        roles,
-        session_id: sessionId,
-        query: trimmed,
-      });
-      onSessionResolved(response.session_id);
-      setMessages((current) => [
-        ...current,
+      await api.chatStream(
         {
-          role: 'assistant',
-          content: response.answer,
-          citations: response.citations,
-          created_at: new Date().toISOString(),
+          tenant_id: tenantId,
+          user_id: userId,
+          roles,
+          session_id: sessionId,
+          query: trimmed,
         },
-      ]);
+        (event) => {
+          if (event.type === 'session') {
+            onSessionResolved(event.session_id);
+            return;
+          }
+
+          if (event.type === 'delta') {
+            setMessages((current) =>
+              current.map((message) =>
+                message.created_at === assistantCreatedAt
+                  ? { ...message, content: `${message.content}${event.text}` }
+                  : message,
+              ),
+            );
+            return;
+          }
+
+          if (event.type === 'citations') {
+            setMessages((current) =>
+              current.map((message) =>
+                message.created_at === assistantCreatedAt
+                  ? { ...message, citations: event.citations }
+                  : message,
+              ),
+            );
+            return;
+          }
+
+          if (event.type === 'error') {
+            setMessages((current) =>
+              current.map((message) =>
+                message.created_at === assistantCreatedAt
+                  ? { ...message, content: event.detail }
+                  : message,
+              ),
+            );
+          }
+        },
+      );
       refreshSessions();
     } catch (error) {
-      setMessages((current) => [
-        ...current,
-        {
-          role: 'assistant',
-          content: error instanceof Error ? error.message : 'Chat request failed',
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      setMessages((current) =>
+        current.map((message) =>
+          message.created_at === assistantCreatedAt
+            ? { ...message, content: error instanceof Error ? error.message : 'Chat request failed' }
+            : message,
+        ),
+      );
     } finally {
       setLoading(false);
     }
