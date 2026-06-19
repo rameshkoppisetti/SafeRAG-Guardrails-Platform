@@ -54,11 +54,11 @@ def chat_stream(payload: ChatRequest, svc: RAGService = Depends(get_rag_service)
         except Exception as exc:
             yield _stream_event("error", detail=f"Chat request failed: {exc}")
 
-    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 def _stream_event(event_type: str, **payload):
-    return json.dumps({"type": event_type, **payload}) + "\n"
+    return f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
 
 
 def _chunk_text(text: str, chunk_size: int = 40):

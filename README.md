@@ -45,6 +45,7 @@ Answer + citations
 ```
 
 For a component-level HLD with request flows, see [docs/hld.md](docs/hld.md).
+For interview talking points and tradeoffs, see [docs/interview-notes.md](docs/interview-notes.md).
 
 ## Features
 

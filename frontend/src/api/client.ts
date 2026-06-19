@@ -72,6 +72,7 @@ export const api = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
       },
       body: JSON.stringify(payload),
     });
@@ -91,17 +92,36 @@ export const api = {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        onEvent(JSON.parse(line) as ChatStreamEvent);
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() || '';
+      for (const frame of frames) {
+        const event = parseSseFrame(frame);
+        if (event) onEvent(event);
       }
     }
 
     buffer += decoder.decode();
     if (buffer.trim()) {
-      onEvent(JSON.parse(buffer) as ChatStreamEvent);
+      const event = parseSseFrame(buffer);
+      if (event) onEvent(event);
     }
   },
 };
+
+function parseSseFrame(frame: string): ChatStreamEvent | undefined {
+  let eventType = 'message';
+  const dataLines: string[] = [];
+
+  for (const line of frame.split('\n')) {
+    if (line.startsWith('event:')) {
+      eventType = line.slice('event:'.length).trim();
+    }
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).trimStart());
+    }
+  }
+
+  if (!dataLines.length) return undefined;
+  const data = JSON.parse(dataLines.join('\n')) as Record<string, unknown>;
+  return { type: eventType, ...data } as ChatStreamEvent;
+}

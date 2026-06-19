@@ -82,8 +82,20 @@ def test_chat_stream_emits_answer_events():
     )
 
     assert stream_resp.status_code == 200
-    events = [json.loads(line) for line in stream_resp.text.splitlines()]
+    assert stream_resp.headers["content-type"].startswith("text/event-stream")
+    events = [_parse_sse_frame(frame) for frame in stream_resp.text.strip().split("\n\n")]
     assert events[0]["type"] == "session"
     assert any(event["type"] == "delta" for event in events)
     assert any(event["type"] == "citations" and event["citations"] for event in events)
     assert events[-1]["type"] == "done"
+
+
+def _parse_sse_frame(frame: str):
+    event_type = "message"
+    data = "{}"
+    for line in frame.splitlines():
+        if line.startswith("event:"):
+            event_type = line.removeprefix("event:").strip()
+        if line.startswith("data:"):
+            data = line.removeprefix("data:").strip()
+    return {"type": event_type, **json.loads(data)}
