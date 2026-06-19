@@ -45,8 +45,8 @@ Answer + citations
 ```
 
 For a component-level HLD with request flows, see [docs/hld.md](docs/hld.md).
+<img width="1355" height="864" alt="image" src="https://github.com/user-attachments/assets/61a4081a-639c-4da1-8abb-a28c263576c9" />
 
-<img width="1405" height="899" alt="image" src="https://github.com/user-attachments/assets/1105df55-558f-452c-8618-810eee9347db" />
 
 
 ## Features
