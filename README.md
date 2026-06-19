@@ -162,7 +162,3 @@ Add:
 - Per-tenant encryption keys
 - OIDC/JWT authentication
 - Role-based authorization middleware
-
-## Interview talking point
-
-> I would keep memory isolated by tenant, user, and session. Short-term memory helps resolve follow-up questions, but retrieval still remains grounded in ACL-filtered indexed documents. I would not directly dump raw documents into vectors or OpenSearch. I would add an ingestion safety layer before embedding: parse, chunk, scan for PII/secrets, apply Bedrock Guardrails, redact or block unsafe chunks, attach ACL metadata, then index only sanitized text. At query time, retrieval is filtered by tenant and ACL. At response time, output guardrails and grounding checks are applied.
