@@ -136,7 +136,7 @@ export function ChatPanel({ tenantId, userId, roles, sessionId, onSessionResolve
                 {message.citations.map((citation) => (
                   <div key={citation.chunk_id} className="citation">
                     <span>{citation.document_id}</span>
-                    <small>{citation.chunk_id}</small>
+                    <small>Indexed source</small>
                     <small>score {citation.score.toFixed(3)}</small>
                   </div>
                 ))}

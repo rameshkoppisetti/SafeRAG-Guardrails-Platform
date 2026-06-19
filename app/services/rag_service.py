@@ -64,14 +64,19 @@ class RAGService:
             return ChatResponse(session_id=session.session_id, answer=query_check.text, citations=[])
 
         safe_query = query_check.text
+        self.session_repo.add_message(session.session_id, "user", safe_query)
+
+        if self._is_small_talk(safe_query):
+            answer = "Hello. Ask me a question about your indexed documents."
+            self.session_repo.add_message(session.session_id, "assistant", answer)
+            return ChatResponse(session_id=session.session_id, answer=answer, citations=[])
+
         results = self.vector_repo.search(
             query=safe_query,
             tenant_id=tenant_id,
             roles=roles,
             top_k=top_k or self.default_top_k,
         )
-
-        self.session_repo.add_message(session.session_id, "user", safe_query)
 
         if not results:
             answer = "I don't know based on the available indexed documents."
@@ -123,3 +128,16 @@ class RAGService:
         if not messages:
             return "No prior messages in this session."
         return "\n".join(f"{msg.role}: {msg.content}" for msg in messages)
+
+    def _is_small_talk(self, query: str) -> bool:
+        normalized = query.strip().lower().strip("!.?, ")
+        return normalized in {
+            "hi",
+            "hello",
+            "hey",
+            "good morning",
+            "good afternoon",
+            "good evening",
+            "thanks",
+            "thank you",
+        }

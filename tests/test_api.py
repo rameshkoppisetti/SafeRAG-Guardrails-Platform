@@ -59,6 +59,34 @@ def test_acl_filtering_blocks_wrong_role():
     assert chat_resp.json()["citations"] == []
 
 
+def test_small_talk_skips_retrieval_and_citations():
+    client = TestClient(create_app())
+    client.post(
+        "/documents/ingest",
+        json={
+            "document_id": "training-v1",
+            "tenant_id": "tenant_123",
+            "acl": ["support"],
+            "text": "The Barcelona team training starts at 10am.",
+        },
+    )
+
+    chat_resp = client.post(
+        "/chat",
+        json={
+            "tenant_id": "tenant_123",
+            "user_id": "user_1",
+            "roles": ["support"],
+            "query": "hi",
+        },
+    )
+
+    assert chat_resp.status_code == 200
+    body = chat_resp.json()
+    assert body["answer"] == "Hello. Ask me a question about your indexed documents."
+    assert body["citations"] == []
+
+
 def test_chat_stream_emits_answer_events():
     client = TestClient(create_app())
     client.post(
