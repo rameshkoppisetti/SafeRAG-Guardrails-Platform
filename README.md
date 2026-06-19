@@ -45,7 +45,9 @@ Answer + citations
 ```
 
 For a component-level HLD with request flows, see [docs/hld.md](docs/hld.md).
-For interview talking points and tradeoffs, see [docs/interview-notes.md](docs/interview-notes.md).
+
+<img width="1405" height="899" alt="image" src="https://github.com/user-attachments/assets/1105df55-558f-452c-8618-810eee9347db" />
+
 
 ## Features
 
